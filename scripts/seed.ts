@@ -51,7 +51,7 @@ async function seed () {
 
   console.log('Reading CSV for allowed emails...')
   const csvContent = fs.readFileSync(CSV_PATH, 'utf-8')
-  const records = parse(csvContent, { columns: true, skip_empty_lines: true })
+  const records = parse(csvContent, { columns: true, skip_empty_lines: true }) as Record<string, string>[]
   const byEmail = new Map<string, string>()
   for (const row of records) {
     const email = (row.email ?? row.Email ?? '').trim().toLowerCase()
