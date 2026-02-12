@@ -1,0 +1,1 @@
+{"version":"7","dialect":"postgresql","entries":[{"idx":0,"version":"7","when":1770901370790,"tag":"0000_lowly_alice","breakpoints":true},{"idx":1,"version":"7","when":1770901380000,"tag":"0001_add_allowed_emails_name","breakpoints":true}]}
