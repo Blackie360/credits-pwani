@@ -7,11 +7,13 @@ type UploadAction = (formData: FormData) => Promise<{ error?: string } | void>
 export function CsvUpload ({
   action,
   label,
-  hint
+  hint,
+  allowReplace = true
 }: {
   action: UploadAction
   label: string
   hint: string
+  allowReplace?: boolean
 }) {
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -51,6 +53,21 @@ export function CsvUpload ({
           {isPending ? 'Uploading...' : 'Upload'}
         </button>
       </div>
+
+      {allowReplace && (
+        <label className="mt-3 flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="replace"
+            value="on"
+            disabled={isPending}
+            className="rounded border-zinc-600 bg-zinc-800 text-orange-500 focus:ring-orange-500"
+          />
+          <span className="text-sm text-zinc-400">
+            Replace existing data (delete all, then insert from CSV)
+          </span>
+        </label>
+      )}
 
       {state?.error && (
         <p className="mt-3 text-sm text-red-400" role="alert">
