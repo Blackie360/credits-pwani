@@ -11,7 +11,7 @@ import { CsvUpload } from './csv-upload'
 export default async function AdminPage () {
   const cookieStore = await cookies()
   const token = cookieStore.get(getAdminCookieName())?.value
-  const isAdmin = verifyAdminToken(token)
+  const isAdmin = await verifyAdminToken(token)
 
   if (!isAdmin) {
     return (

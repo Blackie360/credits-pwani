@@ -12,7 +12,6 @@
     "db:seed": "tsx scripts/seed.ts",
     "seed": "tsx scripts/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "create-admin": "tsx scripts/create-admin.ts",
     "env:pull": "vercel env pull .env.local",
     "check-env": "tsx scripts/check-env.ts"
   },

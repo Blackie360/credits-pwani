@@ -10,7 +10,7 @@ import { allowedEmails, referralCodes } from '@/lib/db/schema'
 async function requireAdmin () {
   const cookieStore = await cookies()
   const token = cookieStore.get(getAdminCookieName())?.value
-  if (!verifyAdminToken(token)) {
+  if (!(await verifyAdminToken(token))) {
     throw new Error('Unauthorized')
   }
 }
@@ -21,7 +21,7 @@ export async function adminLogin (formData: FormData) {
   if (!username || !password) {
     return { error: 'Please enter username and password.' }
   }
-  const token = validateAdminCredentials(username, password)
+  const token = await validateAdminCredentials(username, password)
   if (!token) {
     return { error: 'Invalid username or password.' }
   }

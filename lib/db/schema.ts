@@ -11,3 +11,8 @@ export const referralCodes = pgTable('referral_codes', {
   url: text('url').notNull(),
   claimedByEmail: text('claimed_by_email')
 })
+
+export const adminUsers = pgTable('admin_users', {
+  username: text('username').primaryKey().notNull(),
+  passwordHash: text('password_hash').notNull()
+})
