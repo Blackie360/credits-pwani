@@ -3,6 +3,7 @@
 import { eq, isNull } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { allowedEmails, referralCodes } from '@/lib/db/schema'
+import { sendRedemptionEmail } from '@/lib/email'
 
 function normalizeEmail (email: string): string {
   return email.trim().toLowerCase()
@@ -57,6 +58,12 @@ export async function redeemCode (
     .update(referralCodes)
     .set({ claimedByEmail: email })
     .where(eq(referralCodes.id, unclaimed.id))
+
+  try {
+    await sendRedemptionEmail(email, allowed.name, unclaimed.code, unclaimed.url)
+  } catch (err) {
+    console.error('Failed to send redemption email:', err)
+  }
 
   return {
     success: true,

@@ -1,36 +1,8 @@
 'use client'
 
+import Image from 'next/image'
 import { useActionState, useEffect, useState } from 'react'
 import { redeemCode, getCodeCounts, type RedeemResult } from './actions/redeem'
-
-function Logo () {
-  return (
-    <svg
-      width="56"
-      height="56"
-      viewBox="0 0 56 56"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="mx-auto text-white"
-      aria-hidden
-    >
-      <rect
-        x="4"
-        y="4"
-        width="48"
-        height="48"
-        rx="4"
-        stroke="currentColor"
-        strokeWidth="2"
-        fill="none"
-      />
-      <path
-        d="M28 20L18 36h20L28 20z"
-        fill="currentColor"
-      />
-    </svg>
-  )
-}
 
 export default function Home () {
   const [result, formAction, isPending] = useActionState(redeemCode, null as RedeemResult | null)
@@ -54,7 +26,13 @@ export default function Home () {
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#1a1a1a] px-4 py-16 font-sans text-white">
       <main className="flex w-full max-w-md flex-col items-center gap-8">
         <div className="flex flex-col items-center gap-4">
-          <Logo />
+          <Image
+            src="/CUBE_2D_DARK.png"
+            alt="Cursor Kenya"
+            width={56}
+            height={56}
+            className="mx-auto"
+          />
           <h1 className="text-center text-2xl font-bold tracking-tight">
             Cursor Pro Redeem Codes
           </h1>
@@ -121,7 +99,7 @@ export default function Home () {
         </div>
 
         <p className="text-center text-xs text-zinc-500">
-          Cursor Pro Redeem Codes pwani
+          cursor pro codes by cursor kenya community
         </p>
       </main>
     </div>
