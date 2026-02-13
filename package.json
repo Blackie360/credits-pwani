@@ -4,25 +4,36 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "email:dev": "email dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx scripts/seed.ts",
     "seed": "tsx scripts/seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "create-admin": "tsx scripts/create-admin.ts",
+    "env:pull": "vercel env pull .env.local",
+    "check-env": "tsx scripts/check-env.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
+    "@react-email/components": "^1.0.7",
+    "@tanstack/react-query": "^5.90.21",
+    "@tanstack/react-table": "^8.21.3",
     "csv-parse": "^6.1.0",
     "drizzle-orm": "^0.45.1",
     "next": "16.1.6",
+    "nodemailer": "^8.0.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-email": "^5.2.8"
   },
   "devDependencies": {
+    "@react-email/preview-server": "^5.2.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.9",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.2.4",

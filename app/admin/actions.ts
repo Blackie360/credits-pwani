@@ -42,6 +42,20 @@ export async function adminLogout () {
   redirect('/admin')
 }
 
+function normalizeKey (s: string): string {
+  return s.toLowerCase().trim().replace(/[-_\s]/g, '')
+}
+
+function findColumn (row: Record<string, string>, ...candidates: string[]): string | undefined {
+  const keys = Object.keys(row)
+  for (const candidate of candidates) {
+    const target = normalizeKey(candidate)
+    const found = keys.find((k) => normalizeKey(k) === target)
+    if (found) return row[found]?.trim()
+  }
+  return undefined
+}
+
 export async function uploadEmailsCsv (formData: FormData) {
   await requireAdmin()
 
@@ -52,6 +66,8 @@ export async function uploadEmailsCsv (formData: FormData) {
   if (!file.name.endsWith('.csv')) {
     return { error: 'Only .csv files are supported.' }
   }
+
+  const replace = formData.get('replace') === 'on'
 
   const text = await file.text()
   let records: Record<string, string>[]
@@ -67,23 +83,36 @@ export async function uploadEmailsCsv (formData: FormData) {
 
   const byEmail = new Map<string, string>()
   for (const row of records) {
-    const email = (row.email ?? row.Email ?? '').trim().toLowerCase()
-    const name = (row.name ?? row.Name ?? '').trim() ||
-      [row.first_name ?? row.First_Name ?? '', row.last_name ?? row.Last_Name ?? '']
-        .filter(Boolean).join(' ').trim()
+    const email = (
+      findColumn(row, 'email') ??
+      findColumn(row, 'e-mail') ??
+      findColumn(row, 'email address') ??
+      ''
+    ).toLowerCase()
+    const name =
+      findColumn(row, 'name') ??
+      ([findColumn(row, 'first_name', 'firstname', 'first name'), findColumn(row, 'last_name', 'lastname', 'last name')]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || '')
     if (email && email.includes('@')) {
       if (!byEmail.has(email)) byEmail.set(email, name || '')
     }
   }
 
   if (byEmail.size === 0) {
-    return { error: 'No valid emails found. Make sure the CSV has an "email" column.' }
+    return { error: 'No valid emails found. CSV must have an "email" column (or similar). Other columns are ignored.' }
   }
 
-  let inserted = 0
+  if (replace) {
+    await db.delete(allowedEmails)
+  }
+
   for (const [email, name] of byEmail) {
-    await db.insert(allowedEmails).values({ email, name: name || null }).onConflictDoNothing()
-    inserted++
+    await db.insert(allowedEmails).values({ email, name: name || null }).onConflictDoUpdate({
+      target: allowedEmails.email,
+      set: { name: name || null }
+    })
   }
 
   redirect('/admin')
@@ -100,6 +129,8 @@ export async function uploadCodesCsv (formData: FormData) {
     return { error: 'Only .csv files are supported.' }
   }
 
+  const replace = formData.get('replace') === 'on'
+
   const text = await file.text()
   let records: Record<string, string>[]
   try {
@@ -112,20 +143,45 @@ export async function uploadCodesCsv (formData: FormData) {
     return { error: 'CSV has no data rows.' }
   }
 
-  const codes = new Set<string>()
+  const entries: Array<{ code: string; url: string }> = []
+  const seen = new Set<string>()
+
   for (const row of records) {
-    const code = (row.code ?? row.Code ?? '').trim()
-    if (code) codes.add(code)
+    const url = findColumn(row, 'url', 'link', 'referral_url', 'referral_link')
+    const codeOnly = findColumn(row, 'code', 'code_id', 'referral_code')
+
+    let code: string
+    let resolvedUrl: string
+
+    if (url) {
+      resolvedUrl = url
+      const codeMatch = url.match(/[?&]code=([^&\s#]+)/i)
+      code = (codeMatch?.[1] ?? url).trim()
+    } else if (codeOnly) {
+      code = codeOnly
+      resolvedUrl = `https://cursor.com/referral?code=${encodeURIComponent(code)}`
+    } else {
+      continue
+    }
+
+    if (!code) continue
+    if (seen.has(code)) continue
+    seen.add(code)
+    entries.push({ code, url: resolvedUrl })
   }
 
-  if (codes.size === 0) {
-    return { error: 'No valid codes found. Make sure the CSV has a "code" column.' }
+  if (entries.length === 0) {
+    return { error: 'No valid codes found. CSV must have a "code" or "url" column. Other columns are ignored.' }
   }
 
-  for (const code of codes) {
+  if (replace) {
+    await db.delete(referralCodes)
+  }
+
+  for (const { code, url } of entries) {
     await db.insert(referralCodes).values({
       code,
-      url: `https://cursor.com/referral?code=${code}`,
+      url,
       claimedByEmail: null
     }).onConflictDoNothing()
   }
