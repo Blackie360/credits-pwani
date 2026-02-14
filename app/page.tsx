@@ -54,7 +54,7 @@ export default function Home () {
 
           {result?.success && (
             <div className="w-full rounded-lg border border-green-600/60 bg-green-900/20 px-4 py-3 text-sm text-green-300">
-              <p className="font-medium">Code redeemed successfully.</p>
+              <p className="font-medium">Code assigned successfully. A confirmation email was sent.</p>
               <p className="mt-1 break-all">
                 <a
                   href={result.url}

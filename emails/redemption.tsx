@@ -14,10 +14,6 @@ import {
   Text
 } from '@react-email/components'
 
-const baseUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : 'http://localhost:3000'
-
 interface RedemptionEmailProps {
   name?: string
   code: string
@@ -30,13 +26,16 @@ export const RedemptionEmail = ({
   redemptionUrl
 }: RedemptionEmailProps) => {
   const greeting = name ? `Hi ${name},` : 'Hi,'
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000'
 
   return (
     <Html>
       <Head />
       <Tailwind>
         <Body className="bg-[#0d0d0d] font-sans">
-          <Preview>You&apos;ve redeemed your Cursor Pro credit. Click here to claim it.</Preview>
+          <Preview>Your Cursor Pro referral code is ready. Click to claim your credit.</Preview>
           <Container className="mx-auto my-0 px-6 py-12 max-w-[600px]">
             <Img
               src={`${baseUrl}/CUBE_2D_DARK.png`}
@@ -46,14 +45,14 @@ export const RedemptionEmail = ({
               className="mb-6"
             />
             <Heading className="text-2xl font-bold text-white mt-0 mb-6">
-              Cursor Pro Credit Redeemed
+              Your Cursor Pro Code Is Ready
             </Heading>
             <Section className="my-6 mx-0">
               <Text className="text-base leading-6 text-[#a3a3a3]">
                 {greeting}
               </Text>
               <Text className="text-base leading-6 text-[#a3a3a3]">
-                You&apos;ve successfully redeemed your Cursor Pro referral credit.
+                You&apos;ve successfully received your Cursor Pro referral code.
               </Text>
               <Text className="text-base leading-6 text-[#a3a3a3]">
                 Your referral code: <strong className="text-white font-mono">{code}</strong>

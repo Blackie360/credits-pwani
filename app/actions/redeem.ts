@@ -62,7 +62,13 @@ export async function redeemCode (
   try {
     await sendRedemptionEmail(email, allowed.name, unclaimed.code, unclaimed.url)
   } catch (err) {
-    console.error('Failed to send redemption email:', err)
+    console.error('Failed to send redemption email', {
+      email,
+      name: allowed.name,
+      code: unclaimed.code,
+      url: unclaimed.url,
+      error: err
+    })
   }
 
   return {

@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { parse } from 'csv-parse/sync'
+import { sql } from 'drizzle-orm'
 import { validateAdminCredentials, getAdminCookieName, verifyAdminToken } from '@/lib/admin'
 import { db } from '@/lib/db'
 import { allowedEmails, referralCodes } from '@/lib/db/schema'
@@ -43,7 +44,7 @@ export async function adminLogout () {
 }
 
 function normalizeKey (s: string): string {
-  return s.toLowerCase().trim().replace(/[-_\s]/g, '')
+  return s.toLowerCase().trim().replace(/\s+/g, '')
 }
 
 function findColumn (row: Record<string, string>, ...candidates: string[]): string | undefined {
@@ -104,14 +105,20 @@ export async function uploadEmailsCsv (formData: FormData) {
     return { error: 'No valid emails found. CSV must have an "email" column (or similar). Other columns are ignored.' }
   }
 
-  if (replace) {
-    await db.delete(allowedEmails)
-  }
+  const rows = Array.from(byEmail, ([email, name]) => ({ email, name: name || null }))
 
-  for (const [email, name] of byEmail) {
-    await db.insert(allowedEmails).values({ email, name: name || null }).onConflictDoUpdate({
+  if (replace) {
+    await db.transaction(async (tx) => {
+      await tx.delete(allowedEmails)
+      await tx.insert(allowedEmails).values(rows).onConflictDoUpdate({
+        target: allowedEmails.email,
+        set: { name: sql`excluded.name` }
+      })
+    })
+  } else {
+    await db.insert(allowedEmails).values(rows).onConflictDoUpdate({
       target: allowedEmails.email,
-      set: { name: name || null }
+      set: { name: sql`excluded.name` }
     })
   }
 
@@ -155,7 +162,7 @@ export async function uploadCodesCsv (formData: FormData) {
 
     if (url) {
       resolvedUrl = url
-      const codeMatch = url.match(/[?&]code=([^&\s#]+)/i)
+      const codeMatch = url.match(/[?&]code=([A-Za-z0-9._~-]+)/i)
       code = (codeMatch?.[1] ?? url).trim()
     } else if (codeOnly) {
       code = codeOnly
@@ -175,15 +182,20 @@ export async function uploadCodesCsv (formData: FormData) {
   }
 
   if (replace) {
-    await db.delete(referralCodes)
-  }
-
-  for (const { code, url } of entries) {
-    await db.insert(referralCodes).values({
+    await db.transaction(async (tx) => {
+      await tx.delete(referralCodes)
+      await tx.insert(referralCodes).values(entries.map(({ code, url }) => ({
+        code,
+        url,
+        claimedByEmail: null
+      }))).onConflictDoNothing()
+    })
+  } else {
+    await db.insert(referralCodes).values(entries.map(({ code, url }) => ({
       code,
       url,
       claimedByEmail: null
-    }).onConflictDoNothing()
+    }))).onConflictDoNothing()
   }
 
   redirect('/admin')

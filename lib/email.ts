@@ -3,17 +3,35 @@ import nodemailer from 'nodemailer'
 import { createElement } from 'react'
 import { RedemptionEmail } from '@/emails/redemption'
 
-function createTransport () {
+let transport: nodemailer.Transporter | null = null
+
+function getRequiredEnv (key: string): string {
+  const value = process.env[key]?.trim()
+  if (!value) {
+    throw new Error(`${key} environment variable is not set`)
+  }
+  return value
+}
+
+function getTransport () {
+  if (transport) return transport
+
+  const host = getRequiredEnv('SMTP_HOST')
+  const user = getRequiredEnv('SMTP_USER')
+  const pass = getRequiredEnv('SMTP_PASSWORD')
   const secure = process.env.SMTP_SECURE === 'true'
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
+
+  transport = nodemailer.createTransport({
+    host,
     port: Number(process.env.SMTP_PORT) || 587,
     secure,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD
+      user,
+      pass
     }
   })
+
+  return transport
 }
 
 export async function sendRedemptionEmail (
@@ -30,11 +48,11 @@ export async function sendRedemptionEmail (
     })
   )
 
-  const transport = createTransport()
-  await transport.sendMail({
-    from: process.env.EMAIL_FROM,
+  const from = getRequiredEnv('EMAIL_FROM')
+  await getTransport().sendMail({
+    from,
     to,
-    subject: 'Your Cursor Pro Credit - Redeemed',
+    subject: 'Claim Your Cursor Pro Credit',
     html
   })
 }
