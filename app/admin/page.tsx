@@ -2,9 +2,17 @@ import { cookies } from 'next/headers'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getAdminCookieName, verifyAdminToken } from '@/lib/admin'
-import { adminLogin, adminLogout, uploadEmailsCsv, uploadCodesCsv } from './actions'
+import {
+  adminLogin,
+  adminLogout,
+  uploadEmailsCsv,
+  uploadCodesCsv,
+  upsertAllowedEmail,
+  deleteAllowedEmail
+} from './actions'
 import { AdminAnalytics } from './admin-analytics'
 import { AdminLoginForm } from './admin-login-form'
+import { EmailManager } from './email-manager'
 import { AdminQueryProvider } from './query-provider'
 import { CsvUpload } from './csv-upload'
 
@@ -68,24 +76,27 @@ export default async function AdminPage () {
           </form>
         </header>
 
-        <div className="space-y-8">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <CsvUpload
-              action={uploadEmailsCsv}
-              label="Upload Emails CSV"
-              hint="Uses only &quot;email&quot; and &quot;name&quot; columns (case-insensitive). Other columns ignored."
+        <AdminQueryProvider>
+          <div className="space-y-8">
+            <EmailManager
+              upsertAction={upsertAllowedEmail}
+              deleteAction={deleteAllowedEmail}
             />
-            <CsvUpload
-              action={uploadCodesCsv}
-              label="Upload Codes CSV"
-              hint="Uses &quot;code&quot; or &quot;url&quot; column (e.g. https://cursor.com/referral?code=XXX). Other columns ignored."
-            />
-          </div>
-
-          <AdminQueryProvider>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <CsvUpload
+                action={uploadEmailsCsv}
+                label="Upload Emails CSV"
+                hint="Uses only &quot;email&quot; and &quot;name&quot; columns (case-insensitive). Other columns ignored."
+              />
+              <CsvUpload
+                action={uploadCodesCsv}
+                label="Upload Codes CSV"
+                hint="Uses &quot;code&quot; or &quot;url&quot; column (e.g. https://cursor.com/referral?code=XXX). Other columns ignored."
+              />
+            </div>
             <AdminAnalytics />
-          </AdminQueryProvider>
-        </div>
+          </div>
+        </AdminQueryProvider>
 
         <p className="mt-8 text-center text-xs text-zinc-500">
           <Link href="/" className="underline hover:text-zinc-400">

@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { parse } from 'csv-parse/sync'
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { validateAdminCredentials, getAdminCookieName, verifyAdminToken } from '@/lib/admin'
 import { db } from '@/lib/db'
 import { allowedEmails, referralCodes } from '@/lib/db/schema'
@@ -57,6 +57,56 @@ function findColumn (row: Record<string, string>, ...candidates: string[]): stri
   return undefined
 }
 
+function normalizeEmail (email: string): string {
+  return email.trim().toLowerCase()
+}
+
+function extractEmailsFromRawText (text: string): string[] {
+  const matches = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? []
+  const unique = new Set<string>()
+  for (const entry of matches) {
+    unique.add(normalizeEmail(entry))
+  }
+  return Array.from(unique)
+}
+
+export async function upsertAllowedEmail (formData: FormData) {
+  await requireAdmin()
+
+  const rawEmail = (formData.get('email') as string | null) ?? ''
+  const rawName = (formData.get('name') as string | null) ?? ''
+  const email = normalizeEmail(rawEmail)
+  const name = rawName.trim()
+
+  if (!email || !email.includes('@')) {
+    return { error: 'Please enter a valid email address.' }
+  }
+
+  await db.insert(allowedEmails).values({
+    email,
+    name: name || null
+  }).onConflictDoUpdate({
+    target: allowedEmails.email,
+    set: { name: sql`excluded.name` }
+  })
+
+  return { success: `Saved ${email}` }
+}
+
+export async function deleteAllowedEmail (formData: FormData) {
+  await requireAdmin()
+
+  const rawEmail = (formData.get('email') as string | null) ?? ''
+  const email = normalizeEmail(rawEmail)
+
+  if (!email || !email.includes('@')) {
+    return { error: 'Please enter a valid email address.' }
+  }
+
+  await db.delete(allowedEmails).where(eq(allowedEmails.email, email))
+  return { success: `Removed ${email}` }
+}
+
 export async function uploadEmailsCsv (formData: FormData) {
   await requireAdmin()
 
@@ -102,7 +152,14 @@ export async function uploadEmailsCsv (formData: FormData) {
   }
 
   if (byEmail.size === 0) {
-    return { error: 'No valid emails found. CSV must have an "email" column (or similar). Other columns are ignored.' }
+    const fallbackEmails = extractEmailsFromRawText(text)
+    for (const email of fallbackEmails) {
+      byEmail.set(email, '')
+    }
+  }
+
+  if (byEmail.size === 0) {
+    return { error: 'No valid emails found. Use a CSV with an "email" column or a plain one-email-per-line file.' }
   }
 
   const rows = Array.from(byEmail, ([email, name]) => ({ email, name: name || null }))
